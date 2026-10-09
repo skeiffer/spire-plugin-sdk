@@ -1,0 +1,68 @@
+syntax = "proto3";
+package spire.plugin.agent.workloadkeyprovider.v1;
+option go_package = "github.com/spiffe/spire-plugin-sdk/proto/spire/plugin/agent/workloadkeyprovider/v1;workloadkeyproviderv1";
+
+service WorkloadKeyProvider {
+    rpc GenerateKey(GenerateKeyRequest) returns (GenerateKeyResponse);
+    rpc Sign(SignRequest) returns (SignResponse);
+    rpc ReleaseKey(ReleaseKeyRequest) returns (ReleaseKeyResponse);
+}
+
+message GenerateKeyRequest {
+    string workload_id = 1;
+    uint64 generation = 2;
+    KeyAlgorithm algorithm = 3;
+}
+
+message GenerateKeyResponse {
+    bytes key_reference = 1;
+    bytes public_key = 2;
+    uint64 generation = 3;
+    KeyAlgorithm algorithm = 4;
+    KeyOperationMode operation_mode = 5;
+}
+
+message SignRequest {
+    bytes key_reference = 1;
+    uint64 generation = 2;
+    bytes digest = 3;
+    HashAlgorithm hash_algorithm = 4;
+    SignatureScheme signature_scheme = 5;
+}
+
+message SignResponse {
+    bytes signature = 1;
+}
+
+message ReleaseKeyRequest {
+    bytes key_reference = 1;
+    uint64 generation = 2;
+}
+
+message ReleaseKeyResponse {}
+
+enum KeyAlgorithm {
+    KEY_ALGORITHM_UNSPECIFIED = 0;
+    KEY_ALGORITHM_RSA_2048 = 1;
+    KEY_ALGORITHM_ECDSA_P256 = 2;
+    KEY_ALGORITHM_ECDSA_P384 = 3;
+}
+
+enum KeyOperationMode {
+    KEY_OPERATION_MODE_UNSPECIFIED = 0;
+    KEY_OPERATION_MODE_LOCAL_REFERENCE = 1;
+    KEY_OPERATION_MODE_REMOTE_SIGN = 2;
+}
+
+enum HashAlgorithm {
+    HASH_ALGORITHM_UNSPECIFIED = 0;
+    HASH_ALGORITHM_SHA256 = 1;
+    HASH_ALGORITHM_SHA384 = 2;
+}
+
+enum SignatureScheme {
+    SIGNATURE_SCHEME_UNSPECIFIED = 0;
+    SIGNATURE_SCHEME_RSA_PKCS1V15 = 1;
+    SIGNATURE_SCHEME_RSA_PSS = 2;
+    SIGNATURE_SCHEME_ECDSA = 3;
+}

@@ -42,6 +42,18 @@ There are three types of interfaces:
 | UpstreamAuthority  | [v1](proto/spire/plugin/server/upstreamauthority/v1/upstreamauthority.proto)   | Plugs SPIRE into an upstream PKI.                      | [link](templates/server/upstreamauthority)  |
 
 
+## Experimental provider-owned keys and external leaf issuance
+
+This fork adds the opt-in `WorkloadKeyProvider` agent contract and
+`X509SVIDIssuer` server contract. Key providers generate public keys and opaque
+references, perform signing and release references; generation and operation
+mode are explicit. The contract contains no private-key delivery field.
+
+The issuer receives a proof CSR and a SPIRE-authorized certificate profile.
+CSR subject/SANs/extensions are not authorization inputs. Authority snapshots
+are immutable and versioned; issuance failures do not authorize fallback to
+another issuer. Existing plugin interfaces remain unchanged.
+
 ## Services
 
 ### Common
