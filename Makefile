@@ -46,6 +46,7 @@ plugin-protos := \
 	proto/spire/plugin/server/nodeattestor/v1/nodeattestor.proto \
 	proto/spire/plugin/server/notifier/v1/notifier.proto \
 	proto/spire/plugin/server/upstreamauthority/v1/upstreamauthority.proto \
+	proto/spire/plugin/server/x509svidissuer/v1/x509svidissuer.proto \
 
 
 service-protos := \

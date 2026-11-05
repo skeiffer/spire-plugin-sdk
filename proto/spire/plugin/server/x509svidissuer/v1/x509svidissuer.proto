@@ -1,0 +1,138 @@
+syntax = "proto3";
+package spire.plugin.server.x509svidissuer.v1;
+option go_package = "github.com/spiffe/spire-plugin-sdk/proto/spire/plugin/server/x509svidissuer/v1;x509svidissuerv1";
+
+import "google/protobuf/timestamp.proto";
+
+// X509SVIDIssuer delegates leaf X.509-SVID issuance while leaving SPIRE in
+// control of the authoritative certificate profile and trust-bundle state.
+service X509SVIDIssuer {
+    // Issues one leaf X.509-SVID.
+    //
+    // The proof_csr is required protocol proof. Its signature and public key
+    // must be validated, but its subject, SANs, and extensions are not
+    // authorization inputs. The profile is the sole authority for certificate
+    // contents. The response authority_version must exactly match the requested
+    // immutable authority version.
+    //
+    // INVALID_ARGUMENT indicates malformed proof or profile input.
+    // FAILED_PRECONDITION indicates an unknown, inactive, or stale authority
+    // version. UNAVAILABLE indicates a transient issuer failure. Callers must
+    // not fall back to another issuer after any error.
+    rpc IssueX509SVID(IssueX509SVIDRequest) returns (IssueX509SVIDResponse);
+
+    // Publishes immutable, versioned authority snapshots. SPIRE validates and
+    // activates snapshots and owns bundle publication, rollover, and taint
+    // state. Reusing a version for different authority bytes is invalid.
+    rpc SubscribeAuthoritySnapshots(SubscribeAuthoritySnapshotsRequest) returns (stream AuthoritySnapshot);
+}
+
+message IssueX509SVIDRequest {
+    // Required. DER-encoded PKCS#10 CSR used only to prove control of the
+    // profile public key.
+    bytes proof_csr = 1;
+
+    // Required. SPIRE-authorized leaf certificate profile.
+    X509SVIDProfile profile = 2;
+
+    // Required. Immutable authority snapshot version selected by SPIRE.
+    string authority_version = 3;
+}
+
+message IssueX509SVIDResponse {
+    // Required. DER-encoded leaf certificate.
+    bytes leaf_certificate = 1;
+
+    // Zero or more DER-encoded intermediates in leaf-to-root order. Trust roots
+    // are supplied by the matching authority snapshot and are not repeated.
+    repeated bytes intermediates = 2;
+
+    // Required. Must exactly equal the requested authority_version.
+    string authority_version = 3;
+}
+
+message X509SVIDProfile {
+    // Required. Identifies the SPIRE leaf flow for validation and telemetry.
+    X509SVIDType type = 1;
+
+    // Required. Canonical SPIFFE ID URI authorized by SPIRE.
+    string spiffe_id = 2;
+
+    // Required. DER SubjectPublicKeyInfo. Must equal the proof CSR public key.
+    bytes public_key = 3;
+
+    // Required. DER-encoded RDNSequence authorized by SPIRE.
+    bytes subject = 4;
+
+    // SPIRE-authorized DNS SANs. CSR SANs are ignored.
+    repeated string dns_names = 5;
+
+    // SPIRE-authorized key usages.
+    repeated X509KeyUsage key_usages = 6;
+
+    // SPIRE-authorized extended key usages.
+    repeated X509ExtendedKeyUsage extended_key_usages = 7;
+
+    // SPIRE-authorized extensions. The SPIFFE ID URI SAN is represented by
+    // spiffe_id and must not be overridden here.
+    repeated X509Extension extra_extensions = 8;
+
+    // Required. Inclusive lower validity bound authorized by SPIRE.
+    google.protobuf.Timestamp not_before = 9;
+
+    // Required. Exclusive upper validity bound authorized by SPIRE.
+    google.protobuf.Timestamp not_after = 10;
+}
+
+enum X509SVIDType {
+    X509_SVID_TYPE_UNSPECIFIED = 0;
+    X509_SVID_TYPE_SERVER = 1;
+    X509_SVID_TYPE_AGENT = 2;
+    X509_SVID_TYPE_WORKLOAD = 3;
+}
+
+enum X509KeyUsage {
+    X509_KEY_USAGE_UNSPECIFIED = 0;
+    X509_KEY_USAGE_DIGITAL_SIGNATURE = 1;
+    X509_KEY_USAGE_KEY_ENCIPHERMENT = 2;
+    X509_KEY_USAGE_KEY_AGREEMENT = 3;
+}
+
+enum X509ExtendedKeyUsage {
+    X509_EXTENDED_KEY_USAGE_UNSPECIFIED = 0;
+    X509_EXTENDED_KEY_USAGE_SERVER_AUTH = 1;
+    X509_EXTENDED_KEY_USAGE_CLIENT_AUTH = 2;
+}
+
+message X509Extension {
+    // Required. Dotted-decimal object identifier.
+    string oid = 1;
+
+    // Required. DER-encoded extension value.
+    bytes value = 2;
+
+    bool critical = 3;
+}
+
+message SubscribeAuthoritySnapshotsRequest {
+}
+
+message AuthoritySnapshot {
+    // Required. Content-immutable version identifier.
+    string authority_version = 1;
+
+    // Required. One or more trusted authority chains.
+    repeated AuthorityChain authority_chains = 2;
+
+    // Required. Informational publication time. It does not authorize
+    // activation or replace certificate validity checks.
+    google.protobuf.Timestamp published_at = 3;
+}
+
+message AuthorityChain {
+    // Required. DER-encoded trust root.
+    bytes root = 1;
+
+    // Zero or more DER-encoded intermediates in root-to-leaf order.
+    repeated bytes intermediates = 2;
+}
