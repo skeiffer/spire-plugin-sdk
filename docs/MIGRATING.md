@@ -86,6 +86,14 @@ Shared types are now defined in the SDK `spire.plugin.types` package.
 
 ## Plugin Specific Guidance
 
+### Server X509SVIDIssuer
+
+`IssueX509SVIDRequest.proof_csr` is now `csr`. Update Go callers from `ProofCsr`
+and `GetProofCsr()` to `Csr` and `GetCsr()`. Protobuf field number 1 and its
+bytes type are unchanged, so existing binary gRPC clients and plugins remain
+wire compatible. JSON callers must replace `proofCsr` or `proof_csr` with `csr`.
+CSR signature and public-key validation requirements are unchanged.
+
 ### Agent KeyManager
 
 This interface has changed dramatically. The pre-SDK interface was a simple

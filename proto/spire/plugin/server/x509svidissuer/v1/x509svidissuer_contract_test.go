@@ -8,9 +8,12 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"errors"
 	"testing"
 
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -28,7 +31,7 @@ func TestContractShape(t *testing.T) {
 		t.Fatal("SubscribeAuthoritySnapshots must be server streaming")
 	}
 
-	requireField(t, issue.Input(), "proof_csr", 1)
+	requireField(t, issue.Input(), "csr", 1)
 	requireField(t, issue.Input(), "profile", 2)
 	requireField(t, issue.Input(), "authority_version", 3)
 	requireField(t, issue.Output(), "leaf_certificate", 1)
@@ -45,23 +48,54 @@ func TestContractShape(t *testing.T) {
 	requireField(t, snapshot, "authority_chains", 2)
 }
 
-func TestProofCSRUsesAuthoritativeProfile(t *testing.T) {
+func TestCSRWireCompatibilityAndJSONName(t *testing.T) {
+	// Field 1 encoded by the preceding proof_csr contract.
+	legacyWire := []byte{0x0a, 0x03, 'c', 's', 'r'}
+	var request IssueX509SVIDRequest
+	if err := proto.Unmarshal(legacyWire, &request); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(request.GetCsr(), []byte("csr")) {
+		t.Fatalf("legacy CSR was not preserved: %q", request.GetCsr())
+	}
+	wire, err := proto.Marshal(&request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(wire, legacyWire) {
+		t.Fatalf("CSR wire encoding changed: %x", wire)
+	}
+
+	jsonBytes, err := protojson.Marshal(&request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fields map[string]string
+	if err := json.Unmarshal(jsonBytes, &fields); err != nil {
+		t.Fatal(err)
+	}
+	if len(fields) != 1 || fields["csr"] != "Y3Ny" {
+		t.Fatalf("unexpected CSR JSON encoding: %s", jsonBytes)
+	}
+}
+
+func TestCSRUsesAuthoritativeProfile(t *testing.T) {
 	proofKey := newTestKey(t)
 	profileKey, err := x509.MarshalPKIXPublicKey(proofKey.Public())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	proofCSR := newProofCSR(t, proofKey, &x509.CertificateRequest{
+	csr := newCSR(t, proofKey, &x509.CertificateRequest{
 		Subject:  pkix.Name{CommonName: "untrusted CSR subject"},
 		DNSNames: []string{"untrusted.example"},
 	})
 
 	request := &IssueX509SVIDRequest{
-		ProofCsr: proofCSR,
-		Profile:  &X509SVIDProfile{PublicKey: profileKey},
+		Csr:     csr,
+		Profile: &X509SVIDProfile{PublicKey: profileKey},
 	}
-	if err := validateProofCSR(request); err != nil {
+	if err := validateCSR(request); err != nil {
 		t.Fatalf("valid proof CSR rejected: %v", err)
 	}
 
@@ -71,15 +105,15 @@ func TestProofCSRUsesAuthoritativeProfile(t *testing.T) {
 		t.Fatal(err)
 	}
 	request.Profile.PublicKey = otherPublicKey
-	if err := validateProofCSR(request); !errors.Is(err, errProofKeyMismatch) {
+	if err := validateCSR(request); !errors.Is(err, errProofKeyMismatch) {
 		t.Fatalf("expected proof key mismatch, got %v", err)
 	}
 
-	malformed := append([]byte(nil), proofCSR...)
+	malformed := append([]byte(nil), csr...)
 	malformed[len(malformed)-1] ^= 0xff
-	request.ProofCsr = malformed
+	request.Csr = malformed
 	request.Profile.PublicKey = profileKey
-	if err := validateProofCSR(request); err == nil {
+	if err := validateCSR(request); err == nil {
 		t.Fatal("expected malformed proof signature to be rejected")
 	}
 }
@@ -142,8 +176,8 @@ func requireField(t *testing.T, message protoreflect.MessageDescriptor, name pro
 	}
 }
 
-func validateProofCSR(request *IssueX509SVIDRequest) error {
-	csr, err := x509.ParseCertificateRequest(request.GetProofCsr())
+func validateCSR(request *IssueX509SVIDRequest) error {
+	csr, err := x509.ParseCertificateRequest(request.GetCsr())
 	if err != nil {
 		return err
 	}
@@ -169,7 +203,7 @@ func newTestKey(t *testing.T) *ecdsa.PrivateKey {
 	return key
 }
 
-func newProofCSR(t *testing.T, signer crypto.Signer, template *x509.CertificateRequest) []byte {
+func newCSR(t *testing.T, signer crypto.Signer, template *x509.CertificateRequest) []byte {
 	t.Helper()
 	csr, err := x509.CreateCertificateRequest(rand.Reader, template, signer)
 	if err != nil {

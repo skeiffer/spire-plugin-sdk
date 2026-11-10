@@ -9,7 +9,7 @@ import "google/protobuf/timestamp.proto";
 service X509SVIDIssuer {
     // Issues one leaf X.509-SVID.
     //
-    // The proof_csr is required protocol proof. Its signature and public key
+    // The csr is required protocol proof. Its signature and public key
     // must be validated, but its subject, SANs, and extensions are not
     // authorization inputs. The profile is the sole authority for certificate
     // contents. The response authority_version must exactly match the requested
@@ -30,7 +30,7 @@ service X509SVIDIssuer {
 message IssueX509SVIDRequest {
     // Required. DER-encoded PKCS#10 CSR used only to prove control of the
     // profile public key.
-    bytes proof_csr = 1;
+    bytes csr = 1;
 
     // Required. SPIRE-authorized leaf certificate profile.
     X509SVIDProfile profile = 2;
@@ -58,7 +58,7 @@ message X509SVIDProfile {
     // Required. Canonical SPIFFE ID URI authorized by SPIRE.
     string spiffe_id = 2;
 
-    // Required. DER SubjectPublicKeyInfo. Must equal the proof CSR public key.
+    // Required. DER SubjectPublicKeyInfo. Must equal the CSR public key.
     bytes public_key = 3;
 
     // Required. DER-encoded RDNSequence authorized by SPIRE.

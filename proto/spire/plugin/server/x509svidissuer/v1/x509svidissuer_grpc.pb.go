@@ -32,7 +32,7 @@ const (
 type X509SVIDIssuerClient interface {
 	// Issues one leaf X.509-SVID.
 	//
-	// The proof_csr is required protocol proof. Its signature and public key
+	// The csr is required protocol proof. Its signature and public key
 	// must be validated, but its subject, SANs, and extensions are not
 	// authorization inputs. The profile is the sole authority for certificate
 	// contents. The response authority_version must exactly match the requested
@@ -95,7 +95,7 @@ type X509SVIDIssuer_SubscribeAuthoritySnapshotsClient = grpc.ServerStreamingClie
 type X509SVIDIssuerServer interface {
 	// Issues one leaf X.509-SVID.
 	//
-	// The proof_csr is required protocol proof. Its signature and public key
+	// The csr is required protocol proof. Its signature and public key
 	// must be validated, but its subject, SANs, and extensions are not
 	// authorization inputs. The profile is the sole authority for certificate
 	// contents. The response authority_version must exactly match the requested

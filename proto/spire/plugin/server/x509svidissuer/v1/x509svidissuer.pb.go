@@ -179,7 +179,7 @@ type IssueX509SVIDRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Required. DER-encoded PKCS#10 CSR used only to prove control of the
 	// profile public key.
-	ProofCsr []byte `protobuf:"bytes,1,opt,name=proof_csr,json=proofCsr,proto3" json:"proof_csr,omitempty"`
+	Csr []byte `protobuf:"bytes,1,opt,name=csr,proto3" json:"csr,omitempty"`
 	// Required. SPIRE-authorized leaf certificate profile.
 	Profile *X509SVIDProfile `protobuf:"bytes,2,opt,name=profile,proto3" json:"profile,omitempty"`
 	// Required. Immutable authority snapshot version selected by SPIRE.
@@ -218,9 +218,9 @@ func (*IssueX509SVIDRequest) Descriptor() ([]byte, []int) {
 	return file_spire_plugin_server_x509svidissuer_v1_x509svidissuer_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *IssueX509SVIDRequest) GetProofCsr() []byte {
+func (x *IssueX509SVIDRequest) GetCsr() []byte {
 	if x != nil {
-		return x.ProofCsr
+		return x.Csr
 	}
 	return nil
 }
@@ -309,7 +309,7 @@ type X509SVIDProfile struct {
 	Type X509SVIDType `protobuf:"varint,1,opt,name=type,proto3,enum=spire.plugin.server.x509svidissuer.v1.X509SVIDType" json:"type,omitempty"`
 	// Required. Canonical SPIFFE ID URI authorized by SPIRE.
 	SpiffeId string `protobuf:"bytes,2,opt,name=spiffe_id,json=spiffeId,proto3" json:"spiffe_id,omitempty"`
-	// Required. DER SubjectPublicKeyInfo. Must equal the proof CSR public key.
+	// Required. DER SubjectPublicKeyInfo. Must equal the CSR public key.
 	PublicKey []byte `protobuf:"bytes,3,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
 	// Required. DER-encoded RDNSequence authorized by SPIRE.
 	Subject []byte `protobuf:"bytes,4,opt,name=subject,proto3" json:"subject,omitempty"`
@@ -650,9 +650,9 @@ var File_spire_plugin_server_x509svidissuer_v1_x509svidissuer_proto protoreflect
 
 const file_spire_plugin_server_x509svidissuer_v1_x509svidissuer_proto_rawDesc = "" +
 	"\n" +
-	":spire/plugin/server/x509svidissuer/v1/x509svidissuer.proto\x12%spire.plugin.server.x509svidissuer.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb2\x01\n" +
-	"\x14IssueX509SVIDRequest\x12\x1b\n" +
-	"\tproof_csr\x18\x01 \x01(\fR\bproofCsr\x12P\n" +
+	":spire/plugin/server/x509svidissuer/v1/x509svidissuer.proto\x12%spire.plugin.server.x509svidissuer.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa7\x01\n" +
+	"\x14IssueX509SVIDRequest\x12\x10\n" +
+	"\x03csr\x18\x01 \x01(\fR\x03csr\x12P\n" +
 	"\aprofile\x18\x02 \x01(\v26.spire.plugin.server.x509svidissuer.v1.X509SVIDProfileR\aprofile\x12+\n" +
 	"\x11authority_version\x18\x03 \x01(\tR\x10authorityVersion\"\x95\x01\n" +
 	"\x15IssueX509SVIDResponse\x12)\n" +
